@@ -1,21 +1,4 @@
 services:
-  db:
-    image: docker.io/library/postgres:16-alpine
-    container_name: hackathon-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: hackathon
-    ports:
-      - "5432:5432"
-    volumes:
-      - hackathon_pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d hackathon"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  # The frontend and backend services would go here if dockerized.
+  # Local database removed for Supabase migration.
 
-volumes:
-  hackathon_pg_data:

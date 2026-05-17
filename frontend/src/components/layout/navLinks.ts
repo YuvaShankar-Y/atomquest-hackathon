@@ -1,4 +1,4 @@
-import { Bot, LayoutDashboard, User } from "lucide-react";
+import { Bot, CheckSquare, ClipboardList, LayoutDashboard, Target, Users, User } from "lucide-react";
 import type { UserRole } from "@/types";
 
 export interface NavItem {
@@ -9,18 +9,35 @@ export interface NavItem {
 
 const commonLinks: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/profile", label: "Profile", icon: User },
 ];
 
-const managerLinks: NavItem[] = [{ to: "/ai", label: "AI Demo", icon: Bot }];
-const adminLinks: NavItem[] = [{ to: "/ai", label: "AI Demo", icon: Bot }];
+const employeeLinks: NavItem[] = [
+  { to: "/employee/goals", label: "Goals", icon: Target },
+  { to: "/employee/checkins", label: "Check-ins", icon: CheckSquare },
+];
+
+const managerLinks: NavItem[] = [
+  { to: "/manager/approvals", label: "Team Approvals", icon: Users },
+  { to: "/manager/checkins", label: "Team Check-ins", icon: ClipboardList },
+  { to: "/ai", label: "AI Demo", icon: Bot },
+];
+
+const adminLinks: NavItem[] = [
+  { to: "/admin", label: "Admin Panel", icon: Users },
+  { to: "/ai", label: "AI Demo", icon: Bot },
+];
 
 export function getNavLinks(role: UserRole | undefined): NavItem[] {
-  if (role === "manager") {
-    return [...commonLinks, ...managerLinks];
+  let links = [...commonLinks];
+  
+  if (role === "employee") {
+    links = [...links, ...employeeLinks];
+  } else if (role === "manager") {
+    links = [...links, ...managerLinks];
+  } else if (role === "admin") {
+    links = [...links, ...adminLinks];
   }
-  if (role === "admin") {
-    return [...commonLinks, ...adminLinks];
-  }
-  return commonLinks;
+  
+  links.push({ to: "/profile", label: "Profile", icon: User });
+  return links;
 }

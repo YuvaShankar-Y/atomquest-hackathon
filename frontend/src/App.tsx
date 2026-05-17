@@ -10,6 +10,10 @@ import { Dashboard } from "@/pages/Dashboard";
 import { Login } from "@/pages/Login";
 import { Profile } from "@/pages/Profile";
 import { Register } from "@/pages/Register";
+import { EmployeeGoalSheet } from "@/pages/EmployeeGoalSheet";
+import { ManagerApprovals } from "@/pages/ManagerApprovals";
+import { EmployeeCheckins } from "@/pages/EmployeeCheckins";
+import { ManagerCheckins } from "@/pages/ManagerCheckins";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +40,10 @@ export default function App() {
               }
             >
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/employee/goals" element={<EmployeeGoalSheet />} />
+              <Route path="/employee/checkins" element={<EmployeeCheckins />} />
+              <Route path="/manager/approvals" element={<ManagerApprovals />} />
+              <Route path="/manager/checkins" element={<ManagerCheckins />} />
               <Route path="/ai" element={<AIDemo />} />
               <Route path="/profile" element={<Profile />} />
             </Route>

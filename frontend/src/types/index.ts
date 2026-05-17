@@ -60,3 +60,36 @@ export type {
   GoalCycleRead,
   GoalCyclesResponse,
 } from "./goalCycle";
+
+export type {
+  GoalBase,
+  GoalCreate,
+  GoalDirection,
+  GoalRead,
+  GoalResponse,
+  GoalUomType,
+  GoalUpdate,
+} from "./goal";
+
+export type {
+  GoalSheetCreate,
+  GoalSheetDetailRead,
+  GoalSheetRead,
+  GoalSheetResponse,
+  GoalSheetStatus,
+  GoalSheetUpdate,
+  SubmitResponse,
+} from "./goalSheet";
+
+export type {
+  CheckInCreate,
+  CheckInGoalRead,
+  CheckInRead,
+  CheckInStatus,
+  ManagerCommentCreate,
+} from "./checkin";
+
+export type {
+  ApprovalActionResponse,
+  ApprovalGoalEditRequest,
+} from "./approval";
