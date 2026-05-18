@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { Plus, Send, AlertCircle } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GoalModal } from "@/components/modals/GoalModal";
 import { GoalsTable } from "@/components/tables/GoalsTable";
 import {
-  useActiveGoalCycles,
   useGoalSheets,
   useGoalSheet,
   useCreateGoalSheet,
@@ -20,7 +18,6 @@ import { useActiveGoalCycles as useGoalCycles } from "@/hooks/useGoalCycles";
 import type { GoalCreate, GoalRead } from "@/types";
 
 export function EmployeeGoalSheet() {
-  const { user } = useAuth();
   
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);

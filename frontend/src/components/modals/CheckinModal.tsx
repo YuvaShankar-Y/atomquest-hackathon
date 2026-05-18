@@ -45,7 +45,7 @@ interface CheckinModalProps {
 
 export function CheckinModal({ isOpen, onClose, onSubmit, goal, isSubmitting }: CheckinModalProps) {
   const form = useForm<CheckinFormValues>({
-    resolver: zodResolver(checkinSchema),
+    resolver: zodResolver(checkinSchema) as any,
     defaultValues: {
       actual_value: 0,
       status: "on_track",

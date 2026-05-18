@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -13,11 +13,10 @@ import type { GoalRead } from "@/types";
 interface GoalsTableProps {
   goals: GoalRead[];
   onEdit?: (goal: GoalRead) => void;
-  onDelete?: (goalId: string) => void;
   isReadOnly?: boolean;
 }
 
-export function GoalsTable({ goals, onEdit, onDelete, isReadOnly = false }: GoalsTableProps) {
+export function GoalsTable({ goals, onEdit, isReadOnly = false }: GoalsTableProps) {
   if (goals.length === 0) {
     return (
       <div className="text-center py-12 border rounded-lg bg-muted/20">

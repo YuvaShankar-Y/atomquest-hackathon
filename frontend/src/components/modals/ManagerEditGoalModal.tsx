@@ -39,7 +39,7 @@ interface ManagerEditGoalModalProps {
 
 export function ManagerEditGoalModal({ isOpen, onClose, onSubmit, initialData, isSubmitting }: ManagerEditGoalModalProps) {
   const form = useForm<ManagerGoalFormValues>({
-    resolver: zodResolver(managerGoalSchema),
+    resolver: zodResolver(managerGoalSchema) as any,
     defaultValues: {
       target_value: 0,
       target_date: "",

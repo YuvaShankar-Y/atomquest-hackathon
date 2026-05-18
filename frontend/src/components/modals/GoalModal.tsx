@@ -12,7 +12,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -67,7 +66,7 @@ interface GoalModalProps {
 
 export function GoalModal({ isOpen, onClose, onSubmit, initialData, isSubmitting }: GoalModalProps) {
   const form = useForm<GoalFormValues>({
-    resolver: zodResolver(goalSchema),
+    resolver: zodResolver(goalSchema) as any,
     defaultValues: {
       thrust_area: "",
       title: "",
