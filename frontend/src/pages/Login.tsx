@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +12,11 @@ export function Login() {
   const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("demo1@hackathon.dev");
-  const [password, setPassword] = useState("demo123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? "/dashboard";
+  const from = "/dashboard";
 
   if (isLoading) {
     return (
@@ -40,6 +41,26 @@ export function Login() {
       toast({
         variant: "destructive",
         title: "Login failed",
+        description: getErrorMessage(error, "Invalid credentials"),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDemoSelect = async (email: string) => {
+    setIsSubmitting(true);
+    setEmail(email);
+    setPassword("demo123");
+
+    try {
+      await login({ email, password: "demo123" });
+      toast({ title: "Demo Sign-in", description: `Signed in as ${email}` });
+      navigate(from, { replace: true });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Demo login failed",
         description: getErrorMessage(error, "Invalid credentials"),
       });
     } finally {
@@ -86,7 +107,35 @@ export function Login() {
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          
+          <div className="mt-6">
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Demo Accounts</span>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Select onValueChange={handleDemoSelect} disabled={isSubmitting}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a demo account..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin@hackathon.dev">Admin</SelectItem>
+                  <SelectItem value="manager1@hackathon.dev">Manager 1</SelectItem>
+                  <SelectItem value="manager2@hackathon.dev">Manager 2</SelectItem>
+                  <SelectItem value="employee1@hackathon.dev">Employee 1 (No Goals)</SelectItem>
+                  <SelectItem value="employee2@hackathon.dev">Employee 2 (Submitted)</SelectItem>
+                  <SelectItem value="employee3@hackathon.dev">Employee 3 (Approved, Checkins)</SelectItem>
+                  <SelectItem value="employee4@hackathon.dev">Employee 4 (Approved, No Checkins)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             No account?{" "}
             <Link to="/register" className="text-primary hover:underline">
               Register

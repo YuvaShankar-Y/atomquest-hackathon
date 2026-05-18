@@ -93,3 +93,8 @@ export type {
   ApprovalActionResponse,
   ApprovalGoalEditRequest,
 } from "./approval";
+
+export type {
+  CompletionDashboardRow,
+  AuditLogRead,
+} from "./admin";

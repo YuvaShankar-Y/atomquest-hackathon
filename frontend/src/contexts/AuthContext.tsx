@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, clearTokens, getAccessToken, setTokens } from "@/lib/api";
 import type {
   ApiResponse,
@@ -36,6 +37,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const fetchMe = useCallback(async () => {
     const { data } = await api.get<ApiResponse<AuthUser>>("/api/v1/users/me");
@@ -87,9 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Logout is best-effort when token is invalid
     } finally {
       clearTokens();
+      queryClient.clear();
       setUser(null);
     }
-  }, []);
+  }, [queryClient]);
 
   const hasRole = useCallback(
     (...roles: UserRole[]) => {

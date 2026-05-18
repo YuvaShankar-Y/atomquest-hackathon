@@ -17,7 +17,7 @@ from app.schemas.goal_sheet import (
     validate_goal_weightages,
 )
 
-router = APIRouter(tags=["approvals"])
+router = APIRouter(prefix="/approvals", tags=["approvals"])
 
 
 @router.get("/team/goal-sheets", response_model=ApiResponse[list[GoalSheetDetailRead]])

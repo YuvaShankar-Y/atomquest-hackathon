@@ -13,15 +13,15 @@ import { getNavLinks } from "./navLinks";
 function formatPhaseLabel(phase: GoalCycleRead["phase"]): string {
   switch (phase) {
     case "goal_setting":
-      return "Goal Setting";
+      return "Goal Setting Open";
     case "q1_checkin":
-      return "Q1 Check-in";
+      return "Q1 Check-in Open";
     case "q2_checkin":
-      return "Q2 Check-in";
+      return "Q2 Check-in Open";
     case "q3_checkin":
-      return "Q3 Check-in";
+      return "Q3 Check-in Open";
     case "q4_checkin":
-      return "Q4 Check-in";
+      return "Q4 Check-in Open";
   }
 
   return phase;
@@ -109,6 +109,7 @@ export function Header() {
             <NavLink
               key={to}
               to={to}
+              end={to === "/admin"}
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 cn(

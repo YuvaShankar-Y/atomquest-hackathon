@@ -1,4 +1,4 @@
-import { Bot, CheckSquare, ClipboardList, LayoutDashboard, Target, Users, User } from "lucide-react";
+import { CheckSquare, ClipboardList, LayoutDashboard, Target, Users, User, FileSpreadsheet } from "lucide-react";
 import type { UserRole } from "@/types";
 
 export interface NavItem {
@@ -19,12 +19,12 @@ const employeeLinks: NavItem[] = [
 const managerLinks: NavItem[] = [
   { to: "/manager/approvals", label: "Team Approvals", icon: Users },
   { to: "/manager/checkins", label: "Team Check-ins", icon: ClipboardList },
-  { to: "/ai", label: "AI Demo", icon: Bot },
 ];
 
 const adminLinks: NavItem[] = [
-  { to: "/admin", label: "Admin Panel", icon: Users },
-  { to: "/ai", label: "AI Demo", icon: Bot },
+  { to: "/admin", label: "Goal Sheets", icon: Users },
+  { to: "/admin/completion", label: "Completion Status", icon: ClipboardList },
+  { to: "/admin/reports", label: "Reports", icon: FileSpreadsheet },
 ];
 
 export function getNavLinks(role: UserRole | undefined): NavItem[] {

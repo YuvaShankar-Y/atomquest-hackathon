@@ -1,377 +1,216 @@
-import { useEffect, useState } from "react";
-import { format, isSameDay, parseISO, startOfDay, subDays } from "date-fns";
-import { Activity, Bot, Boxes, Package } from "lucide-react";
-import { ItemsStatusBarChart } from "@/components/charts/BarChart";
-import { AICallsLineChart } from "@/components/charts/LineChart";
-import { ProviderDistributionPieChart } from "@/components/charts/PieChart";
-import { ItemModal } from "@/components/modals/ItemModal";
-import { AILogsTable } from "@/components/tables/AILogsTable";
-import { ItemsTable } from "@/components/tables/ItemsTable";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAILogs, useAllAILogs } from "@/hooks/useAILogs";
-import { useAllItems, useCreateItem, useDeleteItem, useItems, useUpdateItem } from "@/hooks/useItems";
-import { toast } from "@/hooks/use-toast";
-import { getErrorMessage } from "@/lib/api";
-import type { AIProviderName, ItemCreate, ItemRead, ItemStatus } from "@/types";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useGoalSheet, useGoalSheets } from "@/hooks/useGoals";
+import { useTeamGoalSheets } from "@/hooks/useApprovals";
+import { useCompletionDashboard } from "@/hooks/useAdmin";
+import { useActiveGoalCycles } from "@/hooks/useGoalCycles";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Activity, CheckCircle, Target, Users } from "lucide-react";
 
-const statusColors: Record<ItemStatus, string> = {
-  draft: "hsl(38 92% 50%)",
-  active: "hsl(160 84% 39%)",
-  archived: "hsl(215 14% 52%)",
-};
-
-const providerColors: Record<AIProviderName, string> = {
-  mock: "hsl(217 91% 60%)",
-  openai: "hsl(160 84% 39%)",
-  groq: "hsl(280 70% 60%)",
-  anthropic: "hsl(24 95% 53%)",
-};
-
-function StatSkeleton() {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-4 w-4 rounded-full" />
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <Skeleton className="h-8 w-20" />
-        <Skeleton className="h-4 w-32" />
-      </CardContent>
-    </Card>
-  );
-}
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export function Dashboard() {
-  const { user } = useAuth();
-  const [itemsPage, setItemsPage] = useState(1);
-  const [logsPage, setLogsPage] = useState(1);
-  const [itemStatusFilter, setItemStatusFilter] = useState<ItemStatus | "all">("all");
-  const [providerFilter, setProviderFilter] = useState<AIProviderName | "all">("all");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<ItemRead | null>(null);
-
-  const itemsQuery = useItems({
-    page: itemsPage,
-    page_size: 8,
-    status: itemStatusFilter === "all" ? undefined : itemStatusFilter,
-  });
-  const allItemsQuery = useAllItems();
-  const logsQuery = useAILogs({
-    page: logsPage,
-    page_size: 8,
-    provider: providerFilter === "all" ? undefined : providerFilter,
-  });
-  const allLogsQuery = useAllAILogs();
-
-  const createItem = useCreateItem();
-  const updateItem = useUpdateItem();
-  const deleteItem = useDeleteItem();
-
-  useEffect(() => {
-    if (!itemsQuery.error) {
-      return;
-    }
-    toast({
-      variant: "destructive",
-      title: "Could not load items",
-      description: getErrorMessage(itemsQuery.error),
-    });
-  }, [itemsQuery.error]);
-
-  useEffect(() => {
-    if (!allItemsQuery.error) {
-      return;
-    }
-    toast({
-      variant: "destructive",
-      title: "Could not load dashboard items",
-      description: getErrorMessage(allItemsQuery.error),
-    });
-  }, [allItemsQuery.error]);
-
-  useEffect(() => {
-    if (!logsQuery.error) {
-      return;
-    }
-    toast({
-      variant: "destructive",
-      title: "Could not load AI logs",
-      description: getErrorMessage(logsQuery.error),
-    });
-  }, [logsQuery.error]);
-
-  useEffect(() => {
-    if (!allLogsQuery.error) {
-      return;
-    }
-    toast({
-      variant: "destructive",
-      title: "Could not load AI analytics",
-      description: getErrorMessage(allLogsQuery.error),
-    });
-  }, [allLogsQuery.error]);
-
-  const analyticsItems = allItemsQuery.data?.data ?? [];
-  const analyticsLogs = allLogsQuery.data?.data ?? [];
-  const totalItems = allItemsQuery.data?.meta.total ?? 0;
-  const activeItems = analyticsItems.filter((item) => item.status === "active").length;
-  const totalAICalls = allLogsQuery.data?.meta.total ?? 0;
-  const averageTokens =
-    analyticsLogs.length > 0
-      ? Math.round(
-          analyticsLogs.reduce((sum, log) => sum + log.prompt_tokens + log.completion_tokens, 0) /
-            analyticsLogs.length,
-        )
-      : 0;
-
-  const lineChartData = Array.from({ length: 7 }, (_, index) => {
-    const date = startOfDay(subDays(new Date(), 6 - index));
-    return {
-      date: format(date, "MMM d"),
-      calls: analyticsLogs.filter((log) => isSameDay(parseISO(log.created_at), date)).length,
-    };
-  });
-
-  const barChartData = (["draft", "active", "archived"] as ItemStatus[]).map((status) => ({
-    status,
-    count: analyticsItems.filter((item) => item.status === status).length,
-    color: statusColors[status],
-  }));
-
-  const pieChartData = (["mock", "openai", "groq", "anthropic"] as AIProviderName[]).map((provider) => ({
-    name: provider,
-    value: analyticsLogs.filter((log) => log.provider === provider).length,
-    color: providerColors[provider],
-  }));
-
-  const recentItems = [...analyticsItems]
-    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
-    .slice(0, 5);
-
-  const isStatsLoading = allItemsQuery.isLoading || allLogsQuery.isLoading;
-  const isSaving = createItem.isPending || updateItem.isPending;
-
-  const openCreateModal = () => {
-    setEditingItem(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (item: ItemRead) => {
-    setEditingItem(item);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    if (isSaving) {
-      return;
-    }
-    setIsModalOpen(false);
-    setEditingItem(null);
-  };
-
-  const handleItemSubmit = async (values: ItemCreate) => {
-    if (editingItem) {
-      await updateItem.mutateAsync({ itemId: editingItem.id, payload: values });
-    } else {
-      await createItem.mutateAsync(values);
-      setItemsPage(1);
-    }
-    closeModal();
-  };
-
-  const handleDeleteItem = (item: ItemRead) => {
-    if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) {
-      return;
-    }
-    deleteItem.mutate(item.id);
-  };
+  const { user, isLoading: authLoading } = useAuth();
+  
+  if (authLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Skeleton className="h-12 w-12 rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.full_name || 'User'}!</h1>
         <p className="text-muted-foreground">
-          Welcome back, {user?.full_name}. Your dashboard is now driven by live items and AI log data.
+          Here is your overall goal tracking dashboard and analytics.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {isStatsLoading ? (
-          <>
-            <StatSkeleton />
-            <StatSkeleton />
-            <StatSkeleton />
-            <StatSkeleton />
-          </>
-        ) : (
-          <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalItems}</div>
-                <p className="text-xs text-muted-foreground">All items from `/api/v1/items`.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Items</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{activeItems}</div>
-                <p className="text-xs text-muted-foreground">Currently marked as active.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">AI Calls</CardTitle>
-                <Bot className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalAICalls}</div>
-                <p className="text-xs text-muted-foreground">Tracked in `/api/v1/ai/logs`.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Tokens / Call</CardTitle>
-                <Boxes className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{averageTokens}</div>
-                <p className="text-xs text-muted-foreground">Prompt plus completion token average.</p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">AI Calls Over Time</CardTitle>
-            <CardDescription>Last 7 days of AI usage from your real call history.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {allLogsQuery.isLoading ? <Skeleton className="h-[280px] w-full" /> : <AICallsLineChart data={lineChartData} />}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Recent Items</CardTitle>
-            <CardDescription>Your newest items across all statuses.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {allItemsQuery.isLoading ? (
-              Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-14 w-full" />)
-            ) : recentItems.length ? (
-              recentItems.map((item) => (
-                <div key={item.id} className="rounded-lg border p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{format(new Date(item.created_at), "MMM d, yyyy p")}</p>
-                    </div>
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs capitalize text-muted-foreground">
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No items yet. Create your first item below.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Items by Status</CardTitle>
-            <CardDescription>Distribution of draft, active, and archived items.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {allItemsQuery.isLoading ? <Skeleton className="h-[280px] w-full" /> : <ItemsStatusBarChart data={barChartData} />}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">AI Provider Distribution</CardTitle>
-            <CardDescription>Provider share across all recorded AI calls.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {allLogsQuery.isLoading ? (
-              <Skeleton className="h-[280px] w-full" />
-            ) : (
-              <>
-                <ProviderDistributionPieChart data={pieChartData} />
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  {pieChartData.map((provider) => (
-                    <div key={provider.name} className="flex items-center gap-2 rounded-md border px-3 py-2">
-                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: provider.color }} />
-                      <span className="capitalize">{provider.name}</span>
-                      <span className="ml-auto text-muted-foreground">{provider.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardContent className="p-6">
-          <ItemsTable
-            data={itemsQuery.data?.data ?? []}
-            meta={itemsQuery.data?.meta}
-            isLoading={itemsQuery.isLoading}
-            statusFilter={itemStatusFilter}
-            isDeletingId={deleteItem.isPending ? deleteItem.variables : null}
-            onPageChange={setItemsPage}
-            onStatusFilterChange={(status) => {
-              setItemStatusFilter(status);
-              setItemsPage(1);
-            }}
-            onAddItem={openCreateModal}
-            onEditItem={openEditModal}
-            onDeleteItem={handleDeleteItem}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-6">
-          <AILogsTable
-            data={logsQuery.data?.data ?? []}
-            meta={logsQuery.data?.meta}
-            isLoading={logsQuery.isLoading}
-            providerFilter={providerFilter}
-            onPageChange={setLogsPage}
-            onProviderFilterChange={(provider) => {
-              setProviderFilter(provider);
-              setLogsPage(1);
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <ItemModal
-        open={isModalOpen}
-        item={editingItem}
-        isSubmitting={isSaving}
-        onClose={closeModal}
-        onSubmit={(values) => void handleItemSubmit(values)}
-      />
+      {user?.role === "employee" && <EmployeeDashboardContent />}
+      {user?.role === "manager" && <ManagerDashboardContent />}
+      {user?.role === "admin" && <AdminDashboardContent />}
     </div>
+  );
+}
+
+function EmployeeDashboardContent() {
+  const { data: sheets, isLoading: sheetsLoading } = useGoalSheets();
+  const { data: currentSheetDetail, isLoading: detailLoading } = useGoalSheet(sheets?.[0]?.id);
+  
+  if (sheetsLoading || (sheets?.[0]?.id && detailLoading)) return <Skeleton className="h-[400px] w-full" />;
+
+  const sheet = currentSheetDetail || sheets?.[0]; // Fallback to overview if detail fails
+  const goals = currentSheetDetail?.goals || [];
+  
+  const thrustAreaCount: Record<string, number> = {};
+  goals.forEach(g => {
+    thrustAreaCount[g.thrust_area] = (thrustAreaCount[g.thrust_area] || 0) + 1;
+  });
+  
+  const pieData = Object.keys(thrustAreaCount).map(key => ({
+    name: key,
+    value: thrustAreaCount[key]
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard title="Total Goals" value={goals.length} icon={<Target className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none shadow-md" />
+        <MetricCard title="Sheet Status" value={sheet?.status ? sheet.status.toUpperCase() : "NO SHEET"} icon={<Activity className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-none shadow-md" />
+        <MetricCard title="Total Weightage" value={`${goals.reduce((acc, g) => acc + Number(g.weightage), 0)}%`} icon={<CheckCircle className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-violet-500 to-violet-600 text-white border-none shadow-md" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Goal Distribution by Thrust Area</CardTitle>
+            <CardDescription>Breakdown of your current goals</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} fill="#8884d8" dataKey="value" label>
+                    {pieData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">No goals set yet.</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function ManagerDashboardContent() {
+  const { data: teamSheets, isLoading } = useTeamGoalSheets();
+
+  if (isLoading) return <Skeleton className="h-[400px] w-full" />;
+
+  const pendingApprovals = teamSheets?.filter(s => s.status === 'submitted').length || 0;
+  const approved = teamSheets?.filter(s => s.status === 'approved').length || 0;
+  const rework = teamSheets?.filter(s => s.status === 'rework').length || 0;
+
+  const barData = [
+    { name: "Pending Approval", count: pendingApprovals },
+    { name: "Approved", count: approved },
+    { name: "Rework Required", count: rework },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard title="Pending Approvals" value={pendingApprovals} icon={<Activity className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-none shadow-md" />
+        <MetricCard title="Approved Sheets" value={approved} icon={<CheckCircle className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-md" />
+        <MetricCard title="Team Members" value={teamSheets?.length || 0} icon={<Users className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-teal-500 to-teal-600 text-white border-none shadow-md" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Progress Overview</CardTitle>
+            <CardDescription>Goal sheet statuses for your direct reports</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <RechartsTooltip />
+                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboardContent() {
+  const { data: cycles, isLoading: cyclesLoading } = useActiveGoalCycles();
+  const { data: completionData, isLoading: completionLoading } = useCompletionDashboard();
+
+  if (cyclesLoading || completionLoading) return <Skeleton className="h-[400px] w-full" />;
+
+  const totalUsers = completionData?.length || 0;
+  const completedCheckins = completionData?.filter(u => u.is_complete && u.total_goals > 0).length || 0;
+  
+  const statusCounts = { "Fully Checked-in": 0, "Pending Check-ins": 0, "No Goals Set": 0 };
+  completionData?.forEach(row => {
+    if (row.total_goals === 0) {
+      statusCounts["No Goals Set"] += 1;
+    } else if (row.is_complete) {
+      statusCounts["Fully Checked-in"] += 1;
+    } else {
+      statusCounts["Pending Check-ins"] += 1;
+    }
+  });
+
+  const pieData = Object.keys(statusCounts).map(key => ({
+    name: key,
+    value: statusCounts[key as keyof typeof statusCounts]
+  })).filter(d => d.value > 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard title="Active Cycle" value={cycles?.[0]?.name || "None"} icon={<Activity className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-none shadow-md" />
+        <MetricCard title="Total Employees" value={totalUsers} icon={<Users className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 text-white border-none shadow-md" />
+        <MetricCard title="Employees with Check-ins" value={completedCheckins} icon={<CheckCircle className="h-5 w-5 text-white/80" />} className="bg-gradient-to-br from-pink-500 to-pink-600 text-white border-none shadow-md" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Quarterly Check-in Completion</CardTitle>
+            <CardDescription>Company-wide progress on current check-in cycle</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} fill="#8884d8" dataKey="value" label>
+                    {pieData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">No data available.</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ title, value, icon, className }: { title: string; value: string | number; icon: React.ReactNode; className?: string }) {
+  return (
+    <Card className={`relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${className || ""}`}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium z-10">{title}</CardTitle>
+        <div className="z-10 bg-white/20 p-2 rounded-full">{icon}</div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold z-10 relative drop-shadow-sm">{value}</div>
+      </CardContent>
+    </Card>
   );
 }
