@@ -21,7 +21,10 @@ async def get_completion_dashboard(
     db: DbSession,
     _user: AdminUser,
 ) -> ApiResponse[list[CompletionDashboardRow]]:
-    quarter, year = await _get_current_checkin_period(db)
+    period = await _get_current_checkin_period(db)
+    if period is None:
+        return ok(request, [])
+    quarter, year = period
 
     employees_result = await db.execute(select(User).where(User.role == "employee", User.is_active.is_(True)))
     employees = employees_result.scalars().all()
@@ -106,7 +109,7 @@ async def list_audit_logs(
     return ok(request, [AuditLogRead.model_validate(log) for log in logs])
 
 
-async def _get_current_checkin_period(db: DbSession) -> tuple[int, int]:
+async def _get_current_checkin_period(db: DbSession) -> tuple[int, int] | None:
     today = date.today()
     result = await db.execute(
         select(GoalCycle)
@@ -120,17 +123,7 @@ async def _get_current_checkin_period(db: DbSession) -> tuple[int, int]:
     )
     cycle = result.scalars().first()
     if cycle is None:
-        fallback = await db.execute(
-            select(GoalCycle)
-            .where(
-                GoalCycle.phase.in_(["q1_checkin", "q2_checkin", "q3_checkin", "q4_checkin"]),
-                GoalCycle.is_active.is_(True),
-            )
-            .order_by(GoalCycle.end_date.desc(), GoalCycle.start_date.desc())
-        )
-        cycle = fallback.scalars().first()
-    if cycle is None:
-        raise AppException(ErrorCode.CONFLICT, "No active check-in cycle is available")
+        return None
     quarter_map = {"q1_checkin": 1, "q2_checkin": 2, "q3_checkin": 3, "q4_checkin": 4}
     quarter = quarter_map[cycle.phase]
     year_match = re.search(r"(20\d{2})", cycle.name)

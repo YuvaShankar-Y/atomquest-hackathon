@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtomQuest Hackathon 2026 - Submission Document</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { border-bottom: 2px solid #eaecef; padding-bottom: 10px; }
+        h2 { border-bottom: 1px solid #eaecef; padding-bottom: 5px; margin-top: 30px; }
+        a { color: #0366d6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { background-color: #f6f8fa; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+        .mermaid { text-align: center; margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e1e4e8; }
+        .note { background-color: #fffbdd; border-left: 4px solid #ffeb3b; padding: 10px 15px; margin: 20px 0; border-radius: 0 4px 4px 0; font-style: italic; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</head>
+<body>
+
+    <h1>AtomQuest Hackathon 2026 - Submission Document</h1>
+    
+    <p><strong>Team Member:</strong> YuvaShankar</p>
+
+    <h2>1. Live Working Link</h2>
+    <p><strong>Production URL:</strong> <a href="https://atomquest-hackathon-ten.vercel.app" target="_blank">https://atomquest-hackathon-ten.vercel.app</a></p>
+    
+    <div class="note">
+        <strong>Note to Judges:</strong> To evaluate the portal, you can either use the <strong>"Select a demo account"</strong> dropdown on the login page to instantly sign in, or manually enter the credentials below. All passwords are <code>demo123</code>.
+        <ul style="margin-top: 10px; margin-bottom: 0;">
+            <li><strong>Admin:</strong> admin@hackathon.dev (View all goal sheets & analytics)</li>
+            <li><strong>Manager:</strong> manager1@hackathon.dev (Review & approve team goals)</li>
+            <li><strong>Employee:</strong> employee3@hackathon.dev (Create goals & submit check-ins)</li>
+        </ul>
+    </div>
+
+    <h2>2. Source Code Repository</h2>
+    <p><strong>GitHub Repository:</strong> <a href="https://github.com/YuvaShankar-Y/atomquest-hackathon" target="_blank">https://github.com/YuvaShankar-Y/atomquest-hackathon</a></p>
+
+    <h2>3. Architecture Diagram & System Design</h2>
+    <p>The AtomQuest platform is built as a robust, scalable, full-stack web application designed for enterprise goal management and tracking.</p>
+
+    <h3>Tech Stack</h3>
+    <ul>
+        <li><strong>Frontend:</strong> React (TypeScript), Vite, Tailwind CSS, shadcn/ui, TanStack Query, Recharts.</li>
+        <li><strong>Backend:</strong> FastAPI (Python), SQLAlchemy, asyncpg.</li>
+        <li><strong>Database:</strong> PostgreSQL (Supabase).</li>
+        <li><strong>Hosting:</strong> Vercel (Frontend), Render (Backend).</li>
+    </ul>
+
+    <h3>System Diagram</h3>
+    <div class="mermaid">
+flowchart TB
+  subgraph client ["Frontend (Vercel)"]
+    Pages[React Pages Router]
+    Query[TanStack Query Cache]
+    Axios[Axios Interceptors]
+    Types[TypeScript Contracts]
+    Pages --> Query --> Axios
+    Types -.-> Axios
+  end
+
+  subgraph api ["Backend (Render)"]
+    Router[FastAPI Routers]
+  end
+
+  subgraph core ["App Core"]
+    MW[Logging RequestID MW]
+    Exc[Exception Handler]
+    JWT[JWT Refresh Auth]
+  end
+
+  subgraph data ["Data Layer"]
+    PG[(Supabase PostgreSQL)]
+    Alembic[Alembic Migrations]
+  end
+
+  Axios -->|HTTPS CORS| Router
+  Router --> MW --> Exc
+  Router --> JWT
+  Router --> PG
+  Alembic --> PG
+    </div>
+
+    <h3>Data Flow & Workflow</h3>
+    <ol>
+        <li><strong>Authentication & Sessions:</strong> A strictly typed JWT-based authentication system handles sessions. User roles (Employee, Manager, Admin) determine route access and strictly isolate data visibility.</li>
+        <li><strong>API Communication:</strong> The React frontend uses <code>Axios</code> interceptors for seamless JWT token refresh. <code>TanStack Query</code> caches server state (e.g., goal sheets, approval states) locally to prevent redundant data fetching and provide instant UI feedback.</li>
+        <li><strong>Database Strategy:</strong> A normalized PostgreSQL schema models complex hierarchical relationships (Users → Managers) and lifecycle states (Goal Cycles → Goal Sheets → Goals → Check-ins).</li>
+        <li><strong>Analytics:</strong> Org-wide aggregated metrics are processed securely on the backend via parameterized SQL queries and visualized on the frontend using responsive <code>Recharts</code> graphs.</li>
+    </ol>
+
+</body>
+</html>
